@@ -152,6 +152,7 @@ otherwise you will have to commit by hand."
     (define-key map "d" 'git-annex-dired-drop-files)
     (define-key map "e" 'git-annex-dired-edit-files)
     (define-key map "g" 'git-annex-dired-get-files)
+    (define-key map "t" 'git-annex-dired-tag-files)
     map)
   "Git-annex keymap for `dired-mode' buffers.")
 
@@ -183,6 +184,15 @@ otherwise you will have to commit by hand."
 (git-annex-dired-do-to-files "drop" "Annex: dropped %d file(s)")
 (git-annex-dired-do-to-files "edit" "Annex: unlocked %d file(s) for editing")
 (git-annex-dired-do-to-files "get" "Annex: got %d file(s)")
+
+(defun git-annex-dired-tag-files (tag-commands)
+  "TAG-COMMANDS the \"-t TAG1 -t TAG2\" part.
+
+  In dired, execute git annex metadata on this line."
+  (interactive "sTag commands:")
+  (let* ((files (dired-get-marked-files nil nil nil nil nil)))
+    (shell-command (concat "git annex metadata " tag-commands " '" (string-join files "' '") "'"))))
+
 
 (provide 'git-annex)
 
