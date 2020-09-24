@@ -153,6 +153,7 @@ otherwise you will have to commit by hand."
     (define-key map "e" 'git-annex-dired-edit-files)
     (define-key map "g" 'git-annex-dired-get-files)
     (define-key map "t" 'git-annex-dired-tag-files)
+    (define-key map "m" 'git-annex-dired-metadata)
     map)
   "Git-annex keymap for `dired-mode' buffers.")
 
@@ -192,6 +193,13 @@ otherwise you will have to commit by hand."
   (interactive "sTag commands:")
   (let* ((files (dired-get-marked-files nil nil nil nil nil)))
     (shell-command (concat "git annex metadata " tag-commands " '" (string-join files "' '") "'"))))
+
+(defun git-annex-dired-metadata ()
+  "Show metadata of file at point."
+
+  (interactive)
+  (let* ((file (dired-get-filename nil t)))
+    (shell-command (concat "git annex metadata " "'" file "'"))))
 
 
 (provide 'git-annex)
