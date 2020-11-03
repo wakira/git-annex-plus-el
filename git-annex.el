@@ -208,14 +208,14 @@ otherwise you will have to commit by hand."
                  (format "*git-annex-find* %s" cmd))))
     (with-current-buffer buffer
       (git-annex-cmd-to-dired
-        (format "git annex find %s | sed 's/.*/\"&\"/' | xargs ls -alh | sed 's/^/  /'" cmd)))
+        (format "git annex find %s | sed 's/.*/\"&\"/' | xargs ls %s | sed 's/^/  /'" cmd dired-listing-switches)))
     (pop-to-buffer buffer)))
 
 (defun git-annex-cmd-to-dired (full-cmd)
   "Adapted from `counsel-cmd-to-dired'."
   (let ((inhibit-read-only t))
     (erase-buffer)
-    (dired-mode default-directory "-alh")
+    (dired-mode default-directory dired-listing-switches)
     (insert "  " default-directory ":\n")
     (let ((point (point)))
       (insert "  " full-cmd "\n")
