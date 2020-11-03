@@ -154,6 +154,7 @@ otherwise you will have to commit by hand."
     (define-key map "g" 'git-annex-dired-get-files)
     (define-key map "t" 'git-annex-dired-tag-files)
     (define-key map "m" 'git-annex-dired-metadata)
+    (define-key map "f" 'git-annex-dired-find)
     map)
   "Git-annex keymap for `dired-mode' buffers.")
 
@@ -201,6 +202,39 @@ otherwise you will have to commit by hand."
   (let* ((file (dired-get-filename nil t)))
     (shell-command (concat "git annex metadata " "'" file "'"))))
 
+(defun git-annex-dired-find (cmd)
+  (interactive "sMatching options:")
+  (let ((buffer (generate-new-buffer
+                 (format "*git-annex-find* %s" cmd))))
+    (with-current-buffer buffer
+      (git-annex-cmd-to-dired
+        (format "git annex find %s | sed 's/.*/\"&\"/' | xargs ls -alh | sed 's/^/  /'" cmd)))
+    (pop-to-buffer buffer)))
+
+(defun git-annex-cmd-to-dired (full-cmd)
+  "Adapted from `counsel-cmd-to-dired'."
+  (let ((inhibit-read-only t))
+    (erase-buffer)
+    (dired-mode default-directory "-alh")
+    (insert "  " default-directory ":\n")
+    (let ((point (point)))
+      (insert "  " full-cmd "\n")
+      (dired-insert-set-properties point (point)))
+    (setq-local dired-sort-inhibit t)
+    (setq-local revert-buffer-function
+                (lambda (_1 _2) (git-annex-cmd-to-dired full-cmd)))
+    (setq-local dired-subdir-alist
+                (list (cons default-directory (point-min-marker))))
+    (let ((proc (start-process-shell-command
+                 "my-cmd-to-dired" (current-buffer) full-cmd)))
+      (set-process-sentinel
+       proc
+       (lambda (process _msg)
+         (when (and (eq (process-status process) 'exit)
+                    (zerop (process-exit-status process)))
+           (goto-char (point-min))
+           (forward-line 2)
+           (dired-move-to-filename)))))))
 
 (provide 'git-annex)
 
