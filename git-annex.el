@@ -1,4 +1,4 @@
-;;; git-annex.el --- Mode for easy editing of git-annex'd files
+;;; git-annex.el --- Mode for easy editing of git-annex'd files -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2012 John Wiegley
 
@@ -22,7 +22,7 @@
 ;; along with GNU Emacs; see the file COPYING.  If not, write to the
 ;; Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
-
+
 ;;; Commentary:
 
 ;; Typing C-x C-q in an annexed file buffer causes Emacs to run "git annex
