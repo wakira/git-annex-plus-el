@@ -253,7 +253,7 @@ otherwise you will have to commit by hand."
                       (setq matched (cons word matched))))
     (if (and matched git-annex-autotag--files)
         (let ((tag-commands
-               (string-join (mapcar(lambda (x) (concat "-t '" x "'")) matched)
+               (string-join (mapcar (lambda (x) (concat "-t '" (if (stringp x) x (cdr x)) "'")) matched)
                             " ")))
           (shell-command
            (concat "git annex metadata " tag-commands " '" (string-join git-annex-autotag--files "' '") "'"))
