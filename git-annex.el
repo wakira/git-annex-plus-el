@@ -236,6 +236,65 @@ otherwise you will have to commit by hand."
            (forward-line 2)
            (dired-move-to-filename)))))))
 
+(defvar git-annex-autotag-tags '() "A list of strings for auto-tagging.")
+(defvar git-annex-autotag--files '() "Internal variable for git-annex-autotag.")
+
+;; read from buffer and match against tag list
+;; then run git annex command
+(defun git-annex-autotag-finalize ()
+  (interactive)
+  (unless (bound-and-true-p git-annex-autotag-mode)
+    (error "This does not seem to be a git annex autotag buffer"))
+
+  (let* ((raw (buffer-string))
+         (matched nil))
+    (dolist (word git-annex-autotag-tags)
+                  (if (string-match word raw)
+                      (setq matched (cons word matched))))
+    (if (and matched git-annex-autotag--files)
+        (let ((tag-commands
+               (string-join (mapcar(lambda (x) (concat "-t '" x "'")) matched)
+                            " ")))
+          (shell-command
+           (concat "git annex metadata " tag-commands " '" (string-join git-annex-autotag--files "' '") "'"))
+          ))
+    ;; clean up
+    (setq git-annex-autotag--files nil)
+    (git-annex-autotag-kill)
+    ))
+
+(defun git-annex-autotag-kill ()
+  (interactive)
+  (unless (bound-and-true-p git-annex-autotag-mode)
+    (error "This does not seem to be a git annex autotag buffer"))
+
+  (kill-buffer (current-buffer)))
+
+(defvar git-annex-autotag-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "\C-c\C-c" #'git-annex-autotag-finalize)
+    (define-key map "\C-c\C-k" #'git-annex-autotag-kill)
+    map))
+
+(define-minor-mode git-annex-autotag-mode
+  "Minor mode for special key bindings in a capture buffer.
+
+Turning on this mode runs the normal hook `git-annex-autotag-mode-hook'."
+  nil " Tag" git-annex-autotag-mode-map
+  (setq-local
+   header-line-format
+   (substitute-command-keys
+    "\\<git-annex-autotag-mode-map>Tagging buffer.  Finish \
+`\\[git-annex-autotag-finalize]' or abort `\\[git-annex-autotag-kill]'.")))
+
+(defun git-annex-autotag ()
+  (interactive)
+  (setq git-annex-autotag--files (dired-get-marked-files nil nil nil nil nil))
+  (let ((buffer (generate-new-buffer "*git-annex-autotag*")))
+    (with-current-buffer buffer
+      (git-annex-autotag-mode))
+    (pop-to-buffer buffer)))
+
 (provide 'git-annex)
 
 ;;; git-annex.el ends here
