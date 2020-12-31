@@ -153,6 +153,7 @@ otherwise you will have to commit by hand."
     (define-key map "e" 'git-annex-dired-edit-files)
     (define-key map "g" 'git-annex-dired-get-files)
     (define-key map "t" 'git-annex-dired-tag-files)
+    (define-key map "T" 'git-annex-autotag)
     (define-key map "m" 'git-annex-dired-metadata)
     (define-key map "f" 'git-annex-dired-find)
     map)
@@ -249,14 +250,16 @@ otherwise you will have to commit by hand."
   (let* ((raw (buffer-string))
          (matched nil))
     (dolist (word git-annex-autotag-tags)
-                  (if (string-match word raw)
+                  (if (string-match (if (stringp word) word (cdr word)) raw)
                       (setq matched (cons word matched))))
     (if (and matched git-annex-autotag--files)
-        (let ((tag-commands
-               (string-join (mapcar (lambda (x) (concat "-t '" (if (stringp x) x (cdr x)) "'")) matched)
-                            " ")))
-          (shell-command
-           (concat "git annex metadata " tag-commands " '" (string-join git-annex-autotag--files "' '") "'"))
+        (let* ((tag-commands
+                (string-join (mapcar (lambda (x) (concat "-t '" (if (stringp x) x (cdr x)) "'")) matched)
+                            " "))
+               (command
+                (concat "git annex metadata " tag-commands " '" (string-join git-annex-autotag--files "' '") "'"))
+               )
+          (if (y-or-n-p command) (shell-command command))
           ))
     ;; clean up
     (setq git-annex-autotag--files nil)
