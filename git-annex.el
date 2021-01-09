@@ -249,9 +249,9 @@ otherwise you will have to commit by hand."
 
   (let* ((raw (buffer-string))
          (matched nil))
-    (dolist (word git-annex-autotag-tags)
-                  (if (string-match (if (stringp word) word (cdr word)) raw)
-                      (setq matched (cons word matched))))
+    (dolist (word-def git-annex-autotag-tags)
+                  (if (string-match (if (stringp word-def) word-def (car word-def)) raw)
+                      (setq matched (cons word-def matched))))
     (if (and matched git-annex-autotag--files)
         (let* ((tag-commands
                 (string-join (mapcar (lambda (x) (concat "-t '" (if (stringp x) x (cdr x)) "'")) matched)
