@@ -207,10 +207,11 @@ otherwise you will have to commit by hand."
   (interactive "sMatching options:")
   (let ((buffer (generate-new-buffer
                  (format "*git-annex-find* %s" cmd))))
+    (message (format "git annex find %s" cmd))
     (with-current-buffer buffer
       (git-annex-cmd-to-dired
-        (format "git annex find %s | sed 's/.*/\"&\"/' | xargs ls %s | sed 's/^/  /'" cmd dired-listing-switches)))
-    (pop-to-buffer buffer)))
+        (format "git annex find %s | sed 's/.*/\"&\"/' | xargs -r ls %s | sed 's/^/  /'" cmd dired-listing-switches)))
+    ))
 
 (defun git-annex-cmd-to-dired (full-cmd)
   "Adapted from `counsel-cmd-to-dired'."
@@ -226,16 +227,38 @@ otherwise you will have to commit by hand."
                 (lambda (_1 _2) (git-annex-cmd-to-dired full-cmd)))
     (setq-local dired-subdir-alist
                 (list (cons default-directory (point-min-marker))))
-    (let ((proc (start-process-shell-command
+    (let* ((process-has-output nil)
+          (sf (lambda (process _msg)
+                      (when (and (eq (process-status process) 'exit)
+                                 (zerop (process-exit-status process)))
+                        (if process-has-output
+                            (with-current-buffer (process-buffer process)
+                              (progn
+                                (goto-char (point-min))
+                                (forward-line 2)
+                                (dired-move-to-filename)
+                                (pop-to-buffer (current-buffer)))
+                              )
+                          (message "git annex found no result")
+                        ))))
+          (ff (lambda (process string)
+                (when (buffer-live-p (process-buffer process))
+                  (with-current-buffer (process-buffer process)
+                    (let ((moving (= (point) (process-mark process)))
+                          (inhibit-read-only t))
+                      (save-excursion
+                        ;; Insert the text, advancing the process marker.
+                        (goto-char (process-mark process))
+                        (insert string)
+                        (when (not (= 0 (length string)))
+                          (setq process-has-output t))
+                        (set-marker (process-mark process) (point)))
+                      (if moving (goto-char (process-mark process))))))))
+          (proc (start-process-shell-command
                  "my-cmd-to-dired" (current-buffer) full-cmd)))
-      (set-process-sentinel
-       proc
-       (lambda (process _msg)
-         (when (and (eq (process-status process) 'exit)
-                    (zerop (process-exit-status process)))
-           (goto-char (point-min))
-           (forward-line 2)
-           (dired-move-to-filename)))))))
+      (set-process-sentinel proc sf)
+      (set-process-filter proc ff)
+      )))
 
 (defvar git-annex-autotag-tags '() "A list of strings for auto-tagging.")
 (defvar git-annex-autotag--files '() "Internal variable for git-annex-autotag.")
