@@ -1,5 +1,6 @@
-;;; git-annex.el --- Mode for easy editing of git-annex'd files -*- lexical-binding: t -*-
+;;; git-annex-plus.el --- Mode for easy editing of git-annex'd files -*- lexical-binding: t -*-
 
+;; Copyright (C) 2021 Sheng Wang <sheng@a64.work>
 ;; Copyright (C) 2012 John Wiegley
 
 ;; Author: John Wiegley <jwiegley@gmail.com>
@@ -64,37 +65,37 @@ otherwise you will have to commit by hand."
 
 (defun git-annex--toggle-unlock ()
   (when (string=
-		 (vc-backend buffer-file-name)
-		 "Git"
-		 )
-	  (when (and buffer-file-name buffer-read-only
-				 (file-symlink-p buffer-file-name))
-		(let ((target (nth 0 (file-attributes buffer-file-name))))
-		  (assert (stringp target))
-		  (when (string-match "\\.git/annex/" target)
-			(call-process "git" nil nil nil "annex" "edit"
-						  (file-relative-name buffer-file-name default-directory))
-			(let ((here (point-marker)))
-			  (unwind-protect
-				  (revert-buffer nil t t)
-				(goto-char here)))
-			(add-hook 'kill-buffer-hook 'git-annex-add-file nil t)
-			(setq buffer-read-only t))))
-	(when (and buffer-file-name (not buffer-read-only)
-			   (not (file-symlink-p buffer-file-name)))
-	  (let ((cur (current-buffer))
-			(name buffer-file-name)
-			(result))
-		(with-temp-buffer
-		  (call-process "git" nil t nil "diff-files" "--diff-filter=T" "-G^[./]*\\.git/annex/objects/" "--name-only" "--" (file-relative-name name default-directory))
-		  (setq result (buffer-string)))
-		(unless (string= result "")
-		  (git-annex-add-file)
-		  (let ((here (point-marker)))
-			(unwind-protect
-				(revert-buffer nil t t)
-			  (goto-char here)))
-		(setq buffer-read-only nil)))))
+         (vc-backend buffer-file-name)
+         "Git"
+         )
+    (when (and buffer-file-name buffer-read-only
+               (file-symlink-p buffer-file-name))
+      (let ((target (nth 0 (file-attributes buffer-file-name))))
+        (assert (stringp target))
+        (when (string-match "\\.git/annex/" target)
+          (call-process "git" nil nil nil "annex" "edit"
+                        (file-relative-name buffer-file-name default-directory))
+          (let ((here (point-marker)))
+            (unwind-protect
+                (revert-buffer nil t t)
+              (goto-char here)))
+          (add-hook 'kill-buffer-hook 'git-annex-add-file nil t)
+          (setq buffer-read-only t))))
+    (when (and buffer-file-name (not buffer-read-only)
+               (not (file-symlink-p buffer-file-name)))
+      (let ((cur (current-buffer))
+            (name buffer-file-name)
+            (result))
+        (with-temp-buffer
+          (call-process "git" nil t nil "diff-files" "--diff-filter=T" "-G^[./]*\\.git/annex/objects/" "--name-only" "--" (file-relative-name name default-directory))
+          (setq result (buffer-string)))
+        (unless (string= result "")
+          (git-annex-add-file)
+          (let ((here (point-marker)))
+            (unwind-protect
+                (revert-buffer nil t t)
+              (goto-char here)))
+          (setq buffer-read-only nil)))))
   )
 
 (defadvice toggle-read-only (before git-annex-edit-file activate)
@@ -173,7 +174,7 @@ otherwise you will have to commit by hand."
 
 (defmacro git-annex-dired-do-to-files (cmd msg &optional commit-after)
   `(defun ,(intern (concat "git-annex-dired-" cmd "-files"))
-     (file-list &optional arg)
+       (file-list &optional arg)
      (interactive
       (let ((files (dired-get-marked-files t current-prefix-arg)))
         (list files current-prefix-arg)))
@@ -210,7 +211,7 @@ otherwise you will have to commit by hand."
     (message (format "git annex find %s" cmd))
     (with-current-buffer buffer
       (git-annex-cmd-to-dired
-        (format "git annex find %s | sed 's/.*/\"&\"/' | xargs -r ls %s | sed 's/^/  /'" cmd dired-listing-switches)))
+       (format "git annex find %s | sed 's/.*/\"&\"/' | xargs -r ls %s | sed 's/^/  /'" cmd dired-listing-switches)))
     ))
 
 (defun git-annex-cmd-to-dired (full-cmd)
@@ -228,34 +229,34 @@ otherwise you will have to commit by hand."
     (setq-local dired-subdir-alist
                 (list (cons default-directory (point-min-marker))))
     (let* ((process-has-output nil)
-          (sf (lambda (process _msg)
-                      (when (and (eq (process-status process) 'exit)
-                                 (zerop (process-exit-status process)))
-                        (if process-has-output
-                            (with-current-buffer (process-buffer process)
-                              (progn
-                                (goto-char (point-min))
-                                (forward-line 2)
-                                (dired-move-to-filename)
-                                (pop-to-buffer (current-buffer)))
-                              )
-                          (message "git annex found no result")
-                        ))))
-          (ff (lambda (process string)
-                (when (buffer-live-p (process-buffer process))
-                  (with-current-buffer (process-buffer process)
-                    (let ((moving (= (point) (process-mark process)))
-                          (inhibit-read-only t))
-                      (save-excursion
-                        ;; Insert the text, advancing the process marker.
-                        (goto-char (process-mark process))
-                        (insert string)
-                        (when (not (= 0 (length string)))
-                          (setq process-has-output t))
-                        (set-marker (process-mark process) (point)))
-                      (if moving (goto-char (process-mark process))))))))
-          (proc (start-process-shell-command
-                 "my-cmd-to-dired" (current-buffer) full-cmd)))
+           (sf (lambda (process _msg)
+                 (when (and (eq (process-status process) 'exit)
+                            (zerop (process-exit-status process)))
+                   (if process-has-output
+                       (with-current-buffer (process-buffer process)
+                         (progn
+                           (goto-char (point-min))
+                           (forward-line 2)
+                           (dired-move-to-filename)
+                           (pop-to-buffer (current-buffer)))
+                         )
+                     (message "git annex found no result")
+                     ))))
+           (ff (lambda (process string)
+                 (when (buffer-live-p (process-buffer process))
+                   (with-current-buffer (process-buffer process)
+                     (let ((moving (= (point) (process-mark process)))
+                           (inhibit-read-only t))
+                       (save-excursion
+                         ;; Insert the text, advancing the process marker.
+                         (goto-char (process-mark process))
+                         (insert string)
+                         (when (not (= 0 (length string)))
+                           (setq process-has-output t))
+                         (set-marker (process-mark process) (point)))
+                       (if moving (goto-char (process-mark process))))))))
+           (proc (start-process-shell-command
+                  "my-cmd-to-dired" (current-buffer) full-cmd)))
       (set-process-sentinel proc sf)
       (set-process-filter proc ff)
       )))
@@ -273,12 +274,12 @@ otherwise you will have to commit by hand."
   (let* ((raw (buffer-string))
          (matched nil))
     (dolist (word-def git-annex-autotag-tags)
-                  (if (string-match (if (stringp word-def) word-def (car word-def)) raw)
-                      (setq matched (cons word-def matched))))
+      (if (string-match (if (stringp word-def) word-def (car word-def)) raw)
+          (setq matched (cons word-def matched))))
     (if (and matched git-annex-autotag--files)
         (let* ((tag-commands
                 (string-join (mapcar (lambda (x) (concat "-t '" (if (stringp x) x (cdr x)) "'")) matched)
-                            " "))
+                             " "))
                (command
                 (concat "git annex metadata " tag-commands " '" (string-join git-annex-autotag--files "' '") "'"))
                )
@@ -321,6 +322,6 @@ Turning on this mode runs the normal hook `git-annex-autotag-mode-hook'."
       (git-annex-autotag-mode))
     (pop-to-buffer buffer)))
 
-(provide 'git-annex)
+(provide 'git-annex-plus)
 
 ;;; git-annex.el ends here
