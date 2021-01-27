@@ -154,7 +154,7 @@ otherwise you will have to commit by hand."
     (define-key map "e" 'git-annex-dired-edit-files)
     (define-key map "g" 'git-annex-dired-get-files)
     (define-key map "t" 'git-annex-dired-tag-files)
-    (define-key map "T" 'git-annex-autotag)
+    (define-key map "T" 'git-annex-dired-autotag)
     (define-key map "m" 'git-annex-dired-metadata)
     (define-key map "f" 'git-annex-dired-find)
     map)
@@ -261,65 +261,65 @@ otherwise you will have to commit by hand."
       (set-process-filter proc ff)
       )))
 
-(defvar git-annex-autotag-tags '() "A list of strings for auto-tagging.")
-(defvar git-annex-autotag--files '() "Internal variable for git-annex-autotag.")
+(defvar git-annex-dired-autotag-tags '() "A list of strings for auto-tagging.")
+(defvar git-annex-dired-autotag--files '() "Internal variable for git-annex-dired-autotag.")
 
 ;; read from buffer and match against tag list
 ;; then run git annex command
-(defun git-annex-autotag-finalize ()
+(defun git-annex-dired-autotag-finalize ()
   (interactive)
-  (unless (bound-and-true-p git-annex-autotag-mode)
+  (unless (bound-and-true-p git-annex-dired-autotag-mode)
     (error "This does not seem to be a git annex autotag buffer"))
 
   (let* ((raw (buffer-string))
          (matched nil))
-    (dolist (word-def git-annex-autotag-tags)
+    (dolist (word-def git-annex-dired-autotag-tags)
       (if (string-match (if (stringp word-def) word-def (car word-def)) raw)
           (setq matched (cons word-def matched))))
-    (if (and matched git-annex-autotag--files)
+    (if (and matched git-annex-dired-autotag--files)
         (let* ((tag-commands
                 (string-join (mapcar (lambda (x) (concat "-t '" (if (stringp x) x (cdr x)) "'")) matched)
                              " "))
                (command
-                (concat "git annex metadata " tag-commands " '" (string-join git-annex-autotag--files "' '") "'"))
+                (concat "git annex metadata " tag-commands " '" (string-join git-annex-dired-autotag--files "' '") "'"))
                )
           (if (y-or-n-p command) (shell-command command))
           ))
     ;; clean up
-    (setq git-annex-autotag--files nil)
-    (git-annex-autotag-kill)
+    (setq git-annex-dired-autotag--files nil)
+    (git-annex-dired-autotag-kill)
     ))
 
-(defun git-annex-autotag-kill ()
+(defun git-annex-dired-autotag-kill ()
   (interactive)
-  (unless (bound-and-true-p git-annex-autotag-mode)
+  (unless (bound-and-true-p git-annex-dired-autotag-mode)
     (error "This does not seem to be a git annex autotag buffer"))
 
   (kill-buffer (current-buffer)))
 
-(defvar git-annex-autotag-mode-map
+(defvar git-annex-dired-autotag-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map "\C-c\C-c" #'git-annex-autotag-finalize)
-    (define-key map "\C-c\C-k" #'git-annex-autotag-kill)
+    (define-key map "\C-c\C-c" #'git-annex-dired-autotag-finalize)
+    (define-key map "\C-c\C-k" #'git-annex-dired-autotag-kill)
     map))
 
-(define-minor-mode git-annex-autotag-mode
+(define-minor-mode git-annex-dired-autotag-mode
   "Minor mode for special key bindings in a capture buffer.
 
-Turning on this mode runs the normal hook `git-annex-autotag-mode-hook'."
-  nil " Tag" git-annex-autotag-mode-map
+Turning on this mode runs the normal hook `git-annex-dired-autotag-mode-hook'."
+  nil " Tag" git-annex-dired-autotag-mode-map
   (setq-local
    header-line-format
    (substitute-command-keys
-    "\\<git-annex-autotag-mode-map>Tagging buffer.  Finish \
-`\\[git-annex-autotag-finalize]' or abort `\\[git-annex-autotag-kill]'.")))
+    "\\<git-annex-dired-autotag-mode-map>Tagging buffer.  Finish \
+`\\[git-annex-dired-autotag-finalize]' or abort `\\[git-annex-dired-autotag-kill]'.")))
 
-(defun git-annex-autotag ()
+(defun git-annex-dired-autotag ()
   (interactive)
-  (setq git-annex-autotag--files (dired-get-marked-files nil nil nil nil nil))
-  (let ((buffer (generate-new-buffer "*git-annex-autotag*")))
+  (setq git-annex-dired-autotag--files (dired-get-marked-files nil nil nil nil nil))
+  (let ((buffer (generate-new-buffer "*git-annex-dired-autotag*")))
     (with-current-buffer buffer
-      (git-annex-autotag-mode))
+      (git-annex-dired-autotag-mode))
     (pop-to-buffer buffer)))
 
 (provide 'git-annex-plus)
