@@ -56,7 +56,7 @@ otherwise you will have to commit by hand."
   :type 'boolean)
 
 (defsubst git-annex (&rest args)
-  (apply #'call-process "git" nil nil nil "annex" args))
+  (async-shell-command (concat "git annex " (string-join args " "))))
 
 (defun git-annex-add-file ()
   (git-annex "add" (file-relative-name buffer-file-name default-directory))
