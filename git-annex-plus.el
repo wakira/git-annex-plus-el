@@ -167,7 +167,7 @@ otherwise you will have to commit by hand."
   (let ((here (point)))
     (unwind-protect
         (mapc #'(lambda (file)
-                  (git-annex command file)
+                  (git-annex command (concat "'" file "'"))
                   (dired-relist-file (expand-file-name file)))
               file-list)
       (goto-char here))))
