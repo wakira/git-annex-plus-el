@@ -166,7 +166,7 @@ otherwise you will have to commit by hand."
 (defun git-annex-dired--apply (command file-list)
   (let ((here (point)))
     (unwind-protect
-        (git-annex command (concat "'" (string-join file-list "' '") "'"))
+        (git-annex command (concat "\"" (string-join file-list "\" \"") "\""))
         (mapc #'(lambda (file)
                   (dired-relist-file (expand-file-name file)))
               file-list)
