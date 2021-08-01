@@ -56,10 +56,10 @@ otherwise you will have to commit by hand."
   :type 'boolean)
 
 (defsubst git-annex (&rest args)
-  (async-shell-command (concat "git annex " (string-join args " "))))
+  (async-shell-command (concat "git annex " (string-join (mapcar 'git-annex-escape-file-name args) " "))))
 
 (defun git-annex-add-file ()
-  (git-annex "add" (file-relative-name buffer-file-name default-directory))
+  (git-annex "add" (git-annex-escape-file-name (file-relative-name buffer-file-name default-directory)))
   (when git-annex-commit
     (call-process "git" nil nil nil "commit" "-m" "Updated")))
 
@@ -166,7 +166,7 @@ otherwise you will have to commit by hand."
 (defun git-annex-dired--apply (command file-list)
   (let ((here (point)))
     (unwind-protect
-        (git-annex command (concat "\"" (string-join file-list "\" \"") "\""))
+        (git-annex command file-list)
         (mapc #'(lambda (file)
                   (dired-relist-file (expand-file-name file)))
               file-list)
@@ -189,20 +189,36 @@ otherwise you will have to commit by hand."
 (git-annex-dired-do-to-files "edit" "Annex: unlocked %d file(s) for editing")
 (git-annex-dired-do-to-files "get" "Annex: got %d file(s)")
 
+(defun git-annex-escape-file-name (name)
+  "Escape a file name to be quoted using double-quotation mark."
+  (if (string-match "[ \n\t\"\\]" name)
+      (concat "\""
+              (mapconcat (lambda (c)
+                   (pcase c
+                     (?\n "\\n")
+                     (?\t "\\t")
+                     (?\\ "\\\\")
+                     (?\" "\\\"")
+                     (_ (char-to-string c))))
+                 name "")
+              "\"")
+    name))
+
 (defun git-annex-dired-tag-files (tag-commands)
   "TAG-COMMANDS the \"-t TAG1 -t TAG2\" part.
 
   In dired, execute git annex metadata on this line."
   (interactive "sTag commands:")
   (let* ((files (dired-get-marked-files nil nil nil nil nil)))
-    (shell-command (concat "git annex metadata " tag-commands " '" (string-join files "' '") "'"))))
+    (shell-command (concat "git annex metadata " tag-commands " " (string-join
+                                                                   (mapcar 'git-annex-escape-file-name files) " ")))))
 
 (defun git-annex-dired-metadata ()
   "Show metadata of file at point."
 
   (interactive)
   (let* ((file (dired-get-filename nil t)))
-    (shell-command (concat "git annex metadata " "'" file "'"))))
+    (shell-command (concat "git annex metadata " (git-annex-escape-file-name file)))))
 
 (defun git-annex-dired-find (cmd)
   (interactive "sMatching options:")
