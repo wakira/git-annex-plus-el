@@ -56,7 +56,7 @@ otherwise you will have to commit by hand."
   :type 'boolean)
 
 (defsubst git-annex (&rest args)
-  (async-shell-command (concat "git annex " (string-join (mapcar 'git-annex-escape-file-name args) " "))))
+  (async-shell-command (concat "git annex " (string-join args " "))))
 
 (defun git-annex-add-file ()
   (git-annex "add" (git-annex-escape-file-name (file-relative-name buffer-file-name default-directory)))
@@ -166,7 +166,7 @@ otherwise you will have to commit by hand."
 (defun git-annex-dired--apply (command file-list)
   (let ((here (point)))
     (unwind-protect
-        (git-annex command file-list)
+        (git-annex command (mapcar 'git-annex-escape-file-name file-list))
         (mapc #'(lambda (file)
                   (dired-relist-file (expand-file-name file)))
               file-list)
